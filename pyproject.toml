@@ -8,6 +8,9 @@ authors = ["Craig Derington <craigderington17@gmail.com>"]
 python = "^3.9"
 SQLAlchemy = "^1.4.20"
 requests = "^2.25.1"
+celery = "4.4.7"
+redis = "^3.5.3"
+click = "^8.0.1"
 
 [tool.poetry.dev-dependencies]
 
