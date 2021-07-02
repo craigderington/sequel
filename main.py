@@ -6,7 +6,8 @@ import config
 import database
 import logging
 import time
-from tasks import get_dealers, get_dealer_customers, get_dealer_customer_addresses
+from tasks import get_dealers, get_dealer_customers, get_dealer_customer_addresses, \
+    get_dealer_locations, get_dealer_product_types, get_dealer_products
 from datetime import datetime, timedelta
 from models import Dealer, Customer, Address, Location, Product, \
     ProductType, Order, OrderDetail, OrderShipping
@@ -43,6 +44,9 @@ class Workload(object):
         get_dealers()
         get_dealer_customers()
         get_dealer_customer_addresses()
+        get_dealer_locations()
+        get_dealer_product_types()
+        get_dealer_products()
     
     def run_workload(self):
         self.populate_data()
@@ -69,7 +73,10 @@ class Workload(object):
         logger.info("{} Total Customer Address Records".format(str(len(addr))))
 
     def show_dealer_product_types(self):
-        pass
+        pt = db.query(ProductType).all()
+        for p in pt:
+            logger.info("Dealer {} Product Type: {}".format(str(p.dealer_id), str(p.name)))
+        logger.info("{} Total Product Type Records".format(str(len(pt))))
     
     def show_dealer_products(self):
         pass

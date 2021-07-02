@@ -78,7 +78,7 @@ class Product(Base):
     product_type_id = Column(Integer, ForeignKey("product_type.id"), nullable=False)
     product_type = relationship("ProductType")
     name = Column(String(64), nullable=False)
-    description = Column(String(64), nullable=True)
+    description = Column(String(1024), nullable=True)
     item_price = Column(Float, nullable=True)
     active = Column(Boolean)
     location = Column(Integer, ForeignKey("location.id"), nullable=True)

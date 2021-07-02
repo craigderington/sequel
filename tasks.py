@@ -6,7 +6,8 @@ import config
 import requests
 import logging
 from database import db_session as db
-from models import Dealer, Customer, Address, Location
+from models import Dealer, Customer, Address, Location, ProductType, Product, Order, \
+    OrderDetail, OrderShipping
 from sqlalchemy.exc import SQLAlchemyError
 
 logger = logging.getLogger("TASKS")
@@ -184,7 +185,7 @@ def get_dealer_locations():
 
             for loc in resp:
                 location = Location(
-                    dealer_id=random.choice(dealers_ids),
+                    dealer_id=random.choice(dealer_ids),
                     address=loc["address"],
                     active=True
                 )
@@ -251,7 +252,7 @@ def get_dealer_product_types():
 
 def get_dealer_products():
     """ Get Dealer Product Mock Data from API Endpoint """
-    API_PATH = "dealer_product_type.json"
+    API_PATH = "dealer_products.json"
     method = "GET"
     hdr = {"Content-Type": "application/json", "User-Agent": "SEQUEL"}
     params = None
