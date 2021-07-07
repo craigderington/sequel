@@ -7,10 +7,10 @@ import database
 import logging
 import time
 from tasks import get_dealers, get_dealer_customers, get_dealer_customer_addresses, \
-    get_dealer_locations, get_dealer_product_types, get_dealer_products
+    get_dealer_locations, get_dealer_product_types, get_dealer_products, get_customer_orders
 from datetime import datetime, timedelta
 from models import Dealer, Customer, Address, Location, Product, \
-    ProductType, Order, OrderDetail, OrderShipping
+    ProductType, CustomerOrder, OrderDetail, OrderShipping
 
 
 logger = logging.getLogger("MAIN")
@@ -39,7 +39,7 @@ class Workload(object):
         except sqlalchemy.exc.SQLAlchemyError as err:
             logger.critical("Database initialization failure.: {}".format(str(err)))
             sys.exit(1)
-    
+
     def populate_data(self):
         get_dealers()
         get_dealer_customers()
@@ -47,19 +47,25 @@ class Workload(object):
         get_dealer_locations()
         get_dealer_product_types()
         get_dealer_products()
-    
+        get_customer_orders()
+
+
     def run_workload(self):
         self.populate_data()
         self.show_dealers()
         self.show_dealer_customers()
         self.show_dealer_customer_addr()
-    
+        self.show_dealer_product_types()
+        self.show_dealer_products()
+        self.show_customer_orders()
+
+
     def show_dealers(self):
         dealers = self.db.query(Dealer).limit(MQL).all()
         for dealer in dealers:
             logger.info("Dealer: {}".format(dealer.name))
         logger.info("{} Total Dealer Records".format(str(len(dealers))))
-    
+
     def show_dealer_customers(self):
         customers = self.db.query(Customer).limit(MQL).all()
         for c in customers:
@@ -73,17 +79,26 @@ class Workload(object):
         logger.info("{} Total Customer Address Records".format(str(len(addr))))
 
     def show_dealer_product_types(self):
-        pt = db.query(ProductType).all()
+        pt = self.db.query(ProductType).all()
         for p in pt:
             logger.info("Dealer {} Product Type: {}".format(str(p.dealer_id), str(p.name)))
         logger.info("{} Total Product Type Records".format(str(len(pt))))
-    
+
+
     def show_dealer_products(self):
-        pass
-    
+        products = self.db.query(Product).limit(MQL).all()
+        for p in products:
+            logger.info("Dealer Product: {}".format(str(p.name)))
+        logger.info("{} Total Dealer Products.".format(str(len(products))))
+
+
     def show_customer_orders(self):
-        pass
-    
+        orders = self.db.query(CustomerOrder).limit(MQL).all()
+        for o in orders:
+            logger.info("Customer {} Order {} placed on {}".format(str(o.customer_id), str(o.order_number), str(o.order_date)))
+        logger.info("{} Total Customer Orders.".format(str(len(orders))))
+
+
     def show_customer_order_shipping(self):
         pass
 
@@ -102,7 +117,7 @@ if __name__ == "__main__":
             # start populating data
             runner.populate_data()
             logger.info("Starting database workload runner.  Max queries set to: {}".format(str(MQL)))
-            
+
             while True:
                 # run the workload
                 runner.run_workload()

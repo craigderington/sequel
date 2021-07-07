@@ -11,6 +11,7 @@ requests = "^2.25.1"
 celery = "4.4.7"
 redis = "^3.5.3"
 click = "^8.0.1"
+mysqlclient = "^2.0.3"
 
 [tool.poetry.dev-dependencies]
 

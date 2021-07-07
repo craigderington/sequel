@@ -5,8 +5,9 @@ import random
 import config
 import requests
 import logging
+from datetime import datetime, timedelta
 from database import db_session as db
-from models import Dealer, Customer, Address, Location, ProductType, Product, Order, \
+from models import Dealer, Customer, Address, Location, ProductType, Product, CustomerOrder, \
     OrderDetail, OrderShipping
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -49,17 +50,18 @@ def get_dealers():
                 db.flush()
                 cnt += 1
                 logger.info("Dealer Record Added: {}:{}".format(str(dealer.id), i["name"]))
-            
+
             # log the total records added
             logger.info("Total Records Processed: {}".format(str(cnt)))
 
         else:
             logger.info("MockAPI returned status code: {}".format(str(r.status_code)))
-    
+
     except requests.exceptions.HTTPError as http_err:
         logger.info("HTTP Error: {}".format(str(http_err)))
-    
+
     return cnt
+
 
 def get_dealer_customers():
     """ Populate the Dealer Customer List """
@@ -97,7 +99,7 @@ def get_dealer_customers():
                     db.flush()
                     cnt += 1
                     logger.info("Customer Added:{}: {} {}".format(str(nc.id), r["first_name"], r["last_name"]))
-                
+
                 except SQLAlchemyError as db_err:
                     logger.critical("Database Error: {}".format(str(db_err)))
 
@@ -111,6 +113,7 @@ def get_dealer_customers():
         logger.critical("HTTP Connection Error: {}".format(str(err)))
 
     return "{} Customers Loaded".format(str(cnt))
+
 
 def get_dealer_customer_addresses():
     """ Generate Mock Customer Address Data from API Endpoint """
@@ -152,15 +155,16 @@ def get_dealer_customer_addresses():
                     cnt += 1
                 except SQLAlchemyError as db_err:
                     logger.critical("Database Error: {}".format(str(db_err)))
-            
+
             # log the totals
             logger.info("{} Total Customer Address Records Created".format(str(cnt)))
 
         else:
             logger.warning("API status code: {}".format(str(r.status_code)))
-    
+
     except requests.exceptions.HTTPError as err:
         logger.warning("HTTP Connection Error: {}".format(str(err)))
+
 
 def get_dealer_locations():
     """ Get the Dealer Location Mock Data from API Endpoint"""
@@ -177,7 +181,7 @@ def get_dealer_locations():
             headers=hdr,
             params=params
         )
-        
+
         if r.status_code == 200:
             resp = r.json()
             dealers = db.query(Dealer).limit(cfg.QUERY_LIMIT).all()
@@ -198,11 +202,12 @@ def get_dealer_locations():
             logger.info("{} Total Dealer Locations Addedd".format(str(cnt)))
         else:
             logger.warning("API status code: {}".format(str(r.status_code)))
-        
+
     except requests.exceptions.HTTPError as e:
         logger.info(e)
-    
+
     return cnt
+
 
 def get_dealer_product_types():
     """ Get Dealer Product Types Mock Data from API Endpoint """
@@ -238,7 +243,7 @@ def get_dealer_product_types():
                     db.flush()
                     cnt += 1
                     logger.info("Product Type ID: {} Addded".format(str(dpt.id)))
-                
+
                 except SQLAlchemyError as err:
                     logger.critical("Database Error: {}".format(str(err)))
             logger.info("{} Total Product Types Created".format(str(cnt)))
@@ -247,8 +252,9 @@ def get_dealer_product_types():
 
     except requests.exceptions.HTTPError as e:
         logger.warning("HTTP Connection Error: {}".format(str(e)))
-    
+
     return cnt
+
 
 def get_dealer_products():
     """ Get Dealer Product Mock Data from API Endpoint """
@@ -290,25 +296,72 @@ def get_dealer_products():
                     db.flush()
                     cnt += 1
                     logger.info("Product ID: {} added for Dealer ID: {}".format(str(product.id), str(product.dealer_id)))
-                
+
                 except SQLAlchemyError as db_err:
                     logger.info("Database Error: {}".format(str(db_err)))
-            
+
             # log the totals
             logger.info("{} Total Dealer Products Created".format(str(cnt)))
         else:
             logger.warning("API status code: {}".format(str(r.status_code)))
-    
+
     except requests.exceptions.HTTPError as http_err:
         logger.warning("HTTP Connection Error: {}".format(str(http_err)))
-    
+
     return cnt
 
+
 def get_customer_orders():
-    pass
+    """ Get Customer Order Mock Data from API Endpoint """
+    API_PATH = "customer_order.json"
+    method = "GET"
+    hdr = {"Content-Type": "application/json", "User-Agent": "SEQUEL"}
+    params = None
+    cnt = 0
+
+    try:
+        r = requests.request(
+            method,
+            cfg.BASE_URL + API_PATH + cfg.API_KEY,
+            headers=hdr,
+            params=params
+        )
+        if r.status_code == 200:
+            resp = r.json()
+            customers = db.query(Customer).limit(cfg.QUERY_LIMIT).all()
+            ids = [{"customer_id": c.id, "dealer_id": c.dealer_id} for c in customers]
+            for r in resp:
+                for c in ids:
+                    r.update(c)
+                    # add a new customer order
+                    nco = CustomerOrder(
+                        dealer_id=r["dealer_id"],
+                        customer_id=r["customer_id"],
+                        order_number=r["order_number"],
+                        order_date=datetime.now(),
+                        order_status=r["order_status"]
+                    )
+                    # save to database
+                    db.add(nco)
+                    db.commit()
+                    db.flush()
+                    logger.info("Customer ID: {} order completed successfully".format(str(r["customer_id"])))
+                    cnt += 1
+
+    except requests.exceptions.HTTPError as http_error:
+        logger.info("HTTP Error: {}".format(str(http_error)))
+
+    return cnt
+
 
 def get_customer_order_details():
     pass
 
+
 def get_customer_order_shipping():
     pass
+
+
+def get_order_number(customer_id):
+    """ Generate a random customer order number """
+    return str(customer_id) + "-" + str(random.randint(2000000, 3000000))

@@ -17,7 +17,7 @@ class Dealer(Base):
 class Customer(Base):
     __tablename__ = "customer"
     id = Column(Integer, primary_key=True)
-    dealer_id = Column(Integer, ForeignKey("dealer.id"))
+    dealer_id = Column(Integer, ForeignKey("dealer.id"), nullable=False)
     dealer = relationship("Dealer")
     first_name = Column(String(64), nullable=False)
     last_name = Column(String(64), nullable=False)
@@ -32,7 +32,7 @@ class Customer(Base):
 class Address(Base):
     __tablename__ = "address"
     id = Column(Integer, primary_key=True)
-    customer_id = Column(Integer, ForeignKey("customer.id"))
+    customer_id = Column(Integer, ForeignKey("customer.id"), nullable=False)
     customer = relationship("Customer")
     street = Column(String(64), nullable=False)
     city = Column(String(64), nullable=False)
@@ -61,7 +61,7 @@ class Location(Base):
 class ProductType(Base):
     __tablename__ = "product_type"
     id = Column(Integer, primary_key=True)
-    dealer_id = Column(Integer, ForeignKey("dealer.id"))
+    dealer_id = Column(Integer, ForeignKey("dealer.id"), nullable=False)
     dealer = relationship("Dealer")
     name = Column(String(64), nullable=True)
     active = Column(Boolean)
@@ -73,7 +73,7 @@ class ProductType(Base):
 class Product(Base):
     __tablename__ = "product"
     id = Column(Integer, primary_key=True)
-    dealer_id = Column(Integer, ForeignKey("dealer.id"))
+    dealer_id = Column(Integer, ForeignKey("dealer.id"), nullable=False)
     dealer = relationship("Dealer")
     product_type_id = Column(Integer, ForeignKey("product_type.id"), nullable=False)
     product_type = relationship("ProductType")
@@ -81,18 +81,19 @@ class Product(Base):
     description = Column(String(1024), nullable=True)
     item_price = Column(Float, nullable=True)
     active = Column(Boolean)
-    location = Column(Integer, ForeignKey("location.id"), nullable=True)
+    location_id = Column(Integer, ForeignKey("location.id"), nullable=True)
+    location = relationship("Location")
 
     def __repr__(self):
         return "{}:{}".format(self.id, self.name)
 
 
-class Order(Base):
-    __tablename__ = "order"
+class CustomerOrder(Base):
+    __tablename__ = "customer_order"
     id = Column(Integer, primary_key=True)
     dealer_id = Column(Integer, ForeignKey("dealer.id"), nullable=False)
     customer_id = Column(Integer, ForeignKey("customer.id"), nullable=False)
-    order_number = Column(Integer, nullable=False)
+    order_number = Column(String(64), nullable=False)
     order_date = Column(DateTime, nullable=False)
     order_status = Column(Boolean)
     customer = relationship("Customer")
@@ -105,7 +106,7 @@ class Order(Base):
 class OrderDetail(Base):
     __tablename__ = "order_detail"
     id = Column(Integer, primary_key=True)
-    order_id = Column(Integer, ForeignKey("order.id"), nullable=False)
+    order_id = Column(Integer, ForeignKey("customer_order.id"), nullable=False)
     order_product_id = Column(Integer, ForeignKey("product.id"), nullable=False)
     order_product = relationship("Product")
     order_product_quantity = Column(Integer, nullable=False)
@@ -114,7 +115,7 @@ class OrderDetail(Base):
 
     def __repr__(self):
         return "{} {} @ {}".format(
-            self.order_product, 
+            self.order_product,
             self.order_product_quantity,
             self.order_product_item_price
         )
@@ -125,8 +126,8 @@ class OrderShipping(Base):
     id = Column(Integer, primary_key=True)
     address_id = Column(Integer, ForeignKey("address.id"), nullable=False)
     address = relationship("Address")
-    order_id = Column(Integer, ForeignKey("order.id"), nullable=False)
-    order = relationship("Order")
+    order_id = Column(Integer, ForeignKey("customer_order.id"), nullable=False)
+    order = relationship("CustomerOrder")
     order_detail_id = Column(Integer, ForeignKey("order_detail.id"))
     order_detail = relationship("OrderDetail")
     shipping_date = Column(DateTime, nullable=False)
