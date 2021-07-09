@@ -355,7 +355,48 @@ def get_customer_orders():
 
 
 def get_customer_order_details():
-    pass
+    """ Get the Order Detail with Products and Price."""
+    hdr = {"Content-Type": "application/json", "User-Agent": "SEQUEL"}
+    method = "GET"
+    params = None
+    cnt = 0
+    API_PATH = "/customer_order_detail.json"
+
+    try:
+        r = requests.request(
+            method,
+            cfg.BASE_URL + API_PATH + cfg.API_KEY,
+            headers=hdr,
+            params=params
+        )
+
+        if r.status_code == 200:
+            resp = r.json()
+            orders = db.query(CustomerOrder).limit(cfg.QUERY_LIMIT).all()
+            order_ids = [o.id for o in orders]
+            products = db.query(Product).limit(cfg.QUERY_LIMIT).all()
+            product_ids = [p.id for p in products]
+            for n in resp:
+                cod = OrderDetail(
+                    order_id=random.choice(order_ids),
+                    order_product_id=random.choice(product_ids),
+                    order_product_quantity=int(n["order_product_quantity"]),
+                    order_product_item_price=float(n["order_product_item_price"]),
+                    order_line_item_total=float(n["order_product_quantity"] * o["order_product_item_price"])
+                )
+                # save to the database
+                db.add(cod)
+                db.commit()
+                db.flush()
+                logger.info("Customer Order Detail Updated: {}".format(str(cod.id)))
+                cnt += 1
+        else:
+            logger.info("API returned status code: {}".format(str(r.status_code)))
+
+    except requests.exceptions.HTTPError as http_err:
+        logger.warning("HTTP Error: {}".format(str(http_err)))
+
+    return cnt
 
 
 def get_customer_order_shipping():
