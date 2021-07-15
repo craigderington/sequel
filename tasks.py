@@ -382,7 +382,7 @@ def get_customer_order_details():
                     order_product_id=random.choice(product_ids),
                     order_product_quantity=int(n["order_product_quantity"]),
                     order_product_item_price=float(n["order_product_item_price"]),
-                    order_line_item_total=float(n["order_product_quantity"] * o["order_product_item_price"])
+                    order_line_item_total=float(n["order_product_quantity"] * n["order_product_item_price"])
                 )
                 # save to the database
                 db.add(cod)
@@ -400,7 +400,60 @@ def get_customer_order_details():
 
 
 def get_customer_order_shipping():
-    pass
+    hdr = {"Content-Type": "application/json", "User-Agent": "SEQUEL"}
+    API_PATH = "/customer_order_shipping.json"
+    method = "GET"
+    params = None
+    cnt = 0
+
+    try:
+        r = requests.request(
+            method,
+            cfg.BASE_URL + API_PATH + cfg.API_KEY,
+            headers=hdr,
+            params=params
+        )
+
+        if r.status_code == 200:
+            resp = r.json()
+            orders = db.query(Customer.id, CustomerOrder.id, OrderDetail.id, Address.id).filter(
+                Customer.id == CustomerOrder.customer_id,
+                CustomerOrder.id == OrderDetail.order_id,
+                Customer.id == Address.customer_id
+            ).limit(cfg.QUERY_LIMIT).all()
+
+            # create a dictionary of the address ids and orders id to merge with the response data
+            ids = [{"address_id": o[3], "order_id": o[1], "order_detail_id": o[2]} for o in orders]
+
+            for item in resp:
+                for n in ids:
+                    item.update(n)
+                    # create a new customer shipping record
+                    cos = OrderShipping(
+                        address_id=item["address_id"],
+                        order_id=item["order_id"],
+                        order_detail_id=item["order_detail_id"],
+                        shipping_date=datetime.strptime(item["shipping_date"] + " 12:00:00", "%m/%d/%Y %H:%M:%S"),
+                        shipping_status=item["shipping_status"],
+                        shipping_tracking_number=item["shipping_tracking_number"],
+                        shipping_carrier=item["shipping_carrier"],
+                        shipping_delivered=item["shipping_delivered"],
+                        shipping_final_disposition=item["shipping_final_disposition"]
+                    )
+
+                    # save to the database
+                    db.add(cos)
+                    db.commit()
+                    db.flush()
+                    cnt += 1
+                    logger.info("Shipping Customer Order: {}".format(str(item["order_id"])))
+        else:
+            logger.info("API call returned HTTP Status Code: {}".format(str(r.status_code)))
+        
+    except requests.exceptions.HTTPError as http_err:
+        logger.info("HTTP Error: {}".format(str(http_err)))
+
+    return cnt
 
 
 def get_order_number(customer_id):

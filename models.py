@@ -131,9 +131,9 @@ class OrderShipping(Base):
     order_detail_id = Column(Integer, ForeignKey("order_detail.id"))
     order_detail = relationship("OrderDetail")
     shipping_date = Column(DateTime, nullable=False)
-    shipping_status = Column(Boolean, default=False)
-    shipping_tracking_number = Column(String(64), nullable=False, unique=True)
-    shipping_carrier = Column(String(64), nullable=False, unique=True)
+    shipping_status = Column(String(64), default=False)
+    shipping_tracking_number = Column(String(64), nullable=False)
+    shipping_carrier = Column(String(64), nullable=False, default="FedEx")
     shipping_delivered = Column(Boolean, default=False)
     shipping_final_disposition = Column(String(64), nullable=True)
 
